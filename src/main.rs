@@ -15,7 +15,7 @@ use rocket::State;
 use rocket::response::Redirect;
 use rocket::http::{Cookie, Cookies};
 use rocket::request::{Form, FromForm, Request, FromRequest, Outcome};
-use rocket_contrib::templates::Template;
+use rocket_contrib::{json::Json, templates::Template};
 use serde::{Serialize, Deserialize};
 
 use tracker::*;
@@ -23,7 +23,8 @@ use tracker::*;
 type DungeonMaster = Option<(String, String)>;
 type SessionManager = RwLock<HashMap<String, Player>>;
 
-static USER_COUNT: AtomicU32 = AtomicU32::new(0);
+static USER_COUNT: AtomicU32 = AtomicU32::new(1);
+static DUNGEON_MASTER: DungeonMaster = None;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Player {
@@ -99,10 +100,16 @@ pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: St
 }
 
 #[get("/")]
-pub fn show_state(player: Player, tracker: State<Tracker>) -> String {
-	let user = player.user_name;
-	let tracker = tracker.read().unwrap();
-	format!("hello {}!\ninitiatives: {:?}", user, tracker.get_initiative_list())
+pub fn render_state(player: Player, tracker: State<Tracker>) -> Template {
+	let mut ctx: HashMap<String, String> = HashMap::new();
+	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
+	Template::render("status", ctx)
+}
+
+#[get("/tracker")]
+pub fn get_tracker(tracker: State<Tracker>) -> Json<InitiativeTracker> {
+	let tracker = tracker.read().unwrap().clone(); // TODO handle this
+	Json(tracker)
 }
 
 pub fn main() {
@@ -111,7 +118,7 @@ pub fn main() {
 		.manage(RwLock::from(HashMap::<String, Player>::new()))
 		.manage(None::<DungeonMaster>)
 		.manage(AtomicU32::from(0))
-		.mount("/", routes![render_join, handle_join, render_add, handle_add, show_state])
+		.mount("/", routes![render_join, handle_join, render_add, handle_add, render_state, get_tracker])
 		.attach(Template::fairing())
 		.launch();
 }

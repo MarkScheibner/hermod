@@ -6,11 +6,14 @@ use std::sync::RwLock;
 use std::sync::atomic::{AtomicU32, Ordering as SOrdering};
 use std::cmp::{Ord, Ordering};
 
+use serde::Serialize;
+
 static ENTRY_COUNT: AtomicU32 = AtomicU32::new(0);
 
 pub type Tracker = RwLock<InitiativeTracker>;
 
-#[derive(Default, Debug)]
+// TODO this shouldn't derive Clone if possible
+#[derive(Clone, Default, Debug, Serialize)]
 pub struct InitiativeTracker {
 	initiatives: BinaryHeap<InitiativeEntry>,
 	offset: usize
@@ -34,7 +37,7 @@ impl InitiativeTracker {
 	}
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct InitiativeEntry {
 	entry_name: String,
 	entry_id: u32,
