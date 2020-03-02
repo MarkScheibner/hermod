@@ -1,4 +1,5 @@
 use crate::AddEntryMessage; // TODO move this here?
+use crate::Player;
 
 use std::collections::BinaryHeap;
 use std::sync::RwLock;
@@ -41,11 +42,11 @@ pub struct InitiativeEntry {
 	initiative: u32
 }
 impl InitiativeEntry {
-	pub fn new(entry_data: AddEntryMessage) -> InitiativeEntry {
+	pub fn new(entry_data: AddEntryMessage, creator: &Player) -> InitiativeEntry {
 		InitiativeEntry {
 			entry_name: entry_data.entry_name,
 			entry_id: ENTRY_COUNT.fetch_add(1, SOrdering::SeqCst),
-			player_id: 0,
+			player_id: creator.user_id,
 			initiative: entry_data.initiative_value
 		}
 	}

@@ -1,4 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro)]
+#![feature(never_type, proc_macro_hygiene, decl_macro)]
 
 mod tracker;
 
@@ -12,9 +12,9 @@ extern crate rand;
 
 use rand::RngCore;
 use rocket::State;
-use rocket::response::{status, Redirect};
+use rocket::response::Redirect;
 use rocket::http::{Cookie, Cookies};
-use rocket::request::{Form, FromForm};
+use rocket::request::{Form, FromForm, Request, FromRequest, Outcome};
 use rocket_contrib::templates::Template;
 use serde::{Serialize, Deserialize};
 
@@ -25,10 +25,23 @@ type SessionManager = RwLock<HashMap<String, Player>>;
 
 static USER_COUNT: AtomicU32 = AtomicU32::new(0);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Player {
 	user_name: String,
 	user_id: u32
+}
+impl<'a, 'r> FromRequest<'a, 'r> for Player {
+	type Error = ();
+	
+	fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+		let session_manager = req.guard::<State<SessionManager>>()?;
+		let session_manager = session_manager.read().unwrap(); // TODO handle this?
+		let p = req.cookies().get("session").map(|c| c.value()).and_then(|c| session_manager.get(c));
+		match p {
+			Some(player) => Outcome::Success(player.clone()),
+			None => Outcome::Forward(())
+		}
+	}
 }
 
 #[derive(FromForm)]
@@ -52,13 +65,7 @@ impl From<JoinMessage> for Player {
 }
 
 
-#[get("/status")]
-pub fn get_status(tracker: State<Tracker>) -> String {
-	let tracker = tracker.read().expect("Error trying to attain read for TrackerState");
-	format!("{:?}", tracker.get_initiative_list())
-}
-
-#[get("/join")]
+#[get("/", rank = 2)]
 pub fn render_join() -> Template {
 	let ctx: HashMap<String, String> = HashMap::new();
 	Template::render("join", ctx)
@@ -84,21 +91,18 @@ pub fn render_add() -> Template {
 	Template::render("add", ctx)
 }
 #[post("/add", data="<entry_data>")]
-pub fn handle_add(entry_data: Form<AddEntryMessage>, tracker: State<Tracker>) -> status::Accepted<()>{
+pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: State<Tracker>) -> Redirect{
 	let mut tracker = tracker.write().expect("Error trying to attain lock for TrackerState");
-	let entry = InitiativeEntry::new(entry_data.into_inner());
+	let entry = InitiativeEntry::new(entry_data.into_inner(), &sender);
 	tracker.add_entry(entry);
-	status::Accepted(Some(()))
+	Redirect::to("/")
 }
 
 #[get("/")]
-pub fn show_state(session_manager: State<SessionManager>, tracker: State<Tracker>, cookies: Cookies) -> String {
-	let session_manager = session_manager.read().unwrap();
+pub fn show_state(player: Player, tracker: State<Tracker>) -> String {
+	let user = player.user_name;
 	let tracker = tracker.read().unwrap();
-	let user: String = session_manager.get(cookies.get("session").map(|c| c.value()).unwrap_or(""))
-	                          .map(|p| p.user_name.clone())
-	                          .unwrap_or_else(|| "unnamed user".into());
-	format!("hello {}!\nsessions: {:?}\n\n---------\n\ninitiatives: {:?}", user, *session_manager, *tracker)
+	format!("hello {}!\ninitiatives: {:?}", user, tracker.get_initiative_list())
 }
 
 pub fn main() {
@@ -107,7 +111,7 @@ pub fn main() {
 		.manage(RwLock::from(HashMap::<String, Player>::new()))
 		.manage(None::<DungeonMaster>)
 		.manage(AtomicU32::from(0))
-		.mount("/", routes![show_state, get_status, render_join, handle_join, render_add, handle_add])
+		.mount("/", routes![render_join, handle_join, render_add, handle_add, show_state])
 		.attach(Template::fairing())
 		.launch();
 }
