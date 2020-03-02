@@ -100,16 +100,16 @@ pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: St
 }
 
 #[get("/")]
-pub fn render_state(player: Player, tracker: State<Tracker>) -> Template {
+pub fn render_state(_player: Player, tracker: State<Tracker>) -> Template {
 	let mut ctx: HashMap<String, String> = HashMap::new();
 	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
 	Template::render("status", ctx)
 }
 
 #[get("/tracker")]
-pub fn get_tracker(tracker: State<Tracker>) -> Json<InitiativeTracker> {
+pub fn get_tracker(tracker: State<Tracker>) -> Json<TrackerState> {
 	let tracker = tracker.read().unwrap().clone(); // TODO handle this
-	Json(tracker)
+	Json((tracker.get_initiative_list(), tracker.get_offset()))
 }
 
 pub fn main() {

@@ -11,6 +11,7 @@ use serde::Serialize;
 static ENTRY_COUNT: AtomicU32 = AtomicU32::new(0);
 
 pub type Tracker = RwLock<InitiativeTracker>;
+pub type TrackerState = (Vec<InitiativeEntry>, usize);
 
 // TODO this shouldn't derive Clone if possible
 #[derive(Clone, Default, Debug, Serialize)]
@@ -35,13 +36,22 @@ impl InitiativeTracker {
 		initative_list.rotate_left(self.offset);
 		initative_list
 	}
+	
+	pub fn next(&mut self) {
+		self.offset += 1;
+	}
+	
+	pub fn get_offset(&self) -> usize {
+		self.offset
+	}
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct InitiativeEntry {
 	entry_name: String,
 	entry_id: u32,
-	player_id: u32,
+	creator_name: String,
+	creator_id: u32,
 	initiative: u32
 }
 impl InitiativeEntry {
@@ -49,7 +59,8 @@ impl InitiativeEntry {
 		InitiativeEntry {
 			entry_name: entry_data.entry_name,
 			entry_id: ENTRY_COUNT.fetch_add(1, SOrdering::SeqCst),
-			player_id: creator.user_id,
+			creator_name: creator.user_name.clone(),
+			creator_id: creator.user_id,
 			initiative: entry_data.initiative_value
 		}
 	}

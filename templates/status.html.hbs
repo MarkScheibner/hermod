@@ -37,8 +37,8 @@
 					dataType: "json",
 					success: function(result) {
 						var list = $("#ini-list").empty();
-						var ini_list = result["initiatives"];
-						ini_list = ini_list.splice(result["offset"]).concat(ini_list);
+						var ini_list = result[0];
+						ini_list = ini_list.splice(result[1]).concat(ini_list);
 						ini_list.forEach(ini_entry => list.append(make_entry(ini_entry)));
 						list.children().first().addClass("border border-primary");
 					}
@@ -49,7 +49,7 @@
 				//button_str =  (ini["owner_id"] == {{ user_id }} || {{is_master}} ? button_str : '');
 				var button_str = "";
 				return `<li class="list-group-item d-flex justify-content-between align-items-center mt-1">`
-				     + `<div><b>${ini["entry_name"]}</b><br/><font color="#c0c0c0">${ini["player_id"]}</font></div>`
+				     + `<div><b>${ini["entry_name"]}</b><br/><font color="#c0c0c0">${ini["creator_name"]}</font></div>`
 				     + `<div><span class="sr-only">Initiative of </span>${button_str} ${ini["initiative"]}</div></li>`
 			}
 			function remove_entry(id) {
