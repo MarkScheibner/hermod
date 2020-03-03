@@ -36,6 +36,21 @@ impl InitiativeTracker {
 		initative_list
 	}
 	
+	pub fn remove(&mut self, entry_id: u32) {
+		// clone all elements except the one to remove into iterator
+		let element_it = self.initiatives.clone().into_iter().filter(|e| e.entry_id != entry_id);
+		// clear initiative list
+		self.initiatives.clear();
+		// add all elements left in iterator
+		for e in element_it {
+				self.initiatives.push(e);
+		}
+	}
+	
+	pub fn remove_all(&mut self) {
+		self.initiatives.clear();
+	}
+	
 	pub fn next(&mut self) {
 		self.offset += 1;
 	}

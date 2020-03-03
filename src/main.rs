@@ -4,7 +4,6 @@ mod tracker;
 mod session;
 
 use std::collections::HashMap;
-use std::sync::RwLock;
 
 extern crate base64;
 extern crate rand;
@@ -13,7 +12,7 @@ extern crate rand;
 use rand::RngCore;
 use rocket::State;
 use rocket::response::Redirect;
-use rocket::http::{Cookie, Cookies};
+use rocket::http::{Cookie, Cookies, Status};
 use rocket::request::{Form, FromForm};
 use rocket_contrib::{json::Json, templates::Template};
 
@@ -25,7 +24,6 @@ pub struct AddEntryMessage {
 	entry_name: String,
 	initiative_value: u32
 }
-
 
 #[derive(FromForm)]
 pub struct JoinMessage {
@@ -59,11 +57,24 @@ pub fn render_add() -> Template {
 	Template::render("add", ctx)
 }
 #[post("/add", data="<entry_data>")]
-pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: State<Tracker>) -> Redirect{
+pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: State<Tracker>) -> Redirect {
 	let mut tracker = tracker.write().expect("Error trying to attain lock for TrackerState");
 	let entry = InitiativeEntry::new(entry_data.into_inner(), &sender);
 	tracker.add_entry(entry);
 	Redirect::to("/")
+}
+
+#[post("/remove/all")]
+pub fn handle_remove_all(tracker: State<Tracker>) -> Status {
+	let mut tracker = tracker.write().unwrap();
+	tracker.remove_all();
+	Status::NoContent
+}
+#[post("/remove/<entry_id>")]
+pub fn handle_remove(entry_id: u32, tracker: State<Tracker>) -> Status {
+	let mut tracker = tracker.write().unwrap();
+	tracker.remove(entry_id);
+	Status::NoContent
 }
 
 #[get("/")]
@@ -84,7 +95,7 @@ pub fn main() {
 		.manage(Tracker::default())
 		.manage(SessionManager::default())
 		.manage(MasterCookie::default())
-		.mount("/", routes![render_join, handle_join, render_add, handle_add, render_state, get_tracker])
+		.mount("/", routes![render_join, handle_join, render_add, handle_add, handle_remove, handle_remove_all, render_state, get_tracker])
 		.attach(Template::fairing())
 		.launch();
 }
