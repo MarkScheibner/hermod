@@ -42,22 +42,19 @@ impl From<JoinMessage> for Player {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DungeonMaster(Player);
+pub struct DungeonMaster();
 impl<'a, 'r> FromRequest<'a, 'r> for DungeonMaster {
 	type Error = ();
 	
 	fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
 		let master_cookie = req.guard::<State<MasterCookie>>()?;
-		let master_cookie = master_cookie.read().unwrap(); // TODO handle this?
-		let session_manager = req.guard::<State<SessionManager>>()?;
-		let session_manager = session_manager.read().unwrap(); // TODO handle this?
+		let master_cookie = master_cookie.read().unwrap().clone(); // TODO handle this?
 		
 		let user_cookie = req.cookies().get("session").map(|c| c.value().to_string());
-		let p = user_cookie.clone().and_then(|c| session_manager.get(&c));
-		match (master_cookie.clone(), p) {
+		match (master_cookie, user_cookie) {
 			(None, _) | (_, None) => Outcome::Forward(()),
-			(Some(cookie), Some(player)) if cookie.eq(&user_cookie.unwrap()) // unwrap is fine, p is not None
-			  => Outcome::Success(DungeonMaster(player.clone())),
+			(Some(m_cookie), Some(u_cookie)) if m_cookie.eq(&u_cookie) // unwrap is fine, p is not None
+			  => Outcome::Success(DungeonMaster()),
 			_ => Outcome::Forward(())
 		}
 	}
