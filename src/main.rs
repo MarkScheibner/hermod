@@ -125,7 +125,11 @@ pub fn main() {
 		.manage(Tracker::default())
 		.manage(SessionManager::default())
 		.manage(MasterCookie::default())
-		.mount("/", routes![render_join, handle_join, render_add, handle_add, handle_remove, handle_remove_all, render_state, get_tracker])
+		.mount("/", routes![render_join, handle_join,
+		                    render_add, handle_add,
+		                    handle_remove_by_dm, handle_remove, handle_remove_all,
+		                    render_dm_state, render_state, redirect_join,
+		                    get_tracker])
 		.attach(Template::fairing())
 		.launch();
 }
