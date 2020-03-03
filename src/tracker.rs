@@ -56,7 +56,7 @@ impl InitiativeTracker {
 	}
 	
 	pub fn next(&mut self) {
-		self.offset += 1;
+		self.offset = (self.offset + 1) % self.initiatives.len();
 	}
 	
 	pub fn get_offset(&self) -> usize {
