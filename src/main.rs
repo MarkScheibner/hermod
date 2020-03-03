@@ -90,7 +90,20 @@ pub fn handle_remove(initiator: Player, entry_id: u32, tracker: State<Tracker>) 
 	}
 }
 
+#[post("/next")]
+pub fn handle_next(_dm: DungeonMaster, tracker:State<Tracker>) -> Status {
+	let mut tracker = tracker.write().unwrap();
+	tracker.next();
+	Status::NoContent
+}
+
 #[get("/")]
+pub fn render_dm_state(_dm: DungeonMaster, tracker: State<Tracker>) -> Template {
+	let mut ctx: HashMap<String, String> = HashMap::new();
+	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
+	Template::render("status", ctx)
+}
+#[get("/", rank = 2)]
 pub fn render_state(_player: Player, tracker: State<Tracker>) -> Template {
 	let mut ctx: HashMap<String, String> = HashMap::new();
 	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
