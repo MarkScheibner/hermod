@@ -67,7 +67,7 @@ impl InitiativeEntry {
 }
 impl Ord for InitiativeEntry {
 	fn cmp(&self, other: &Self) -> Ordering {
-		self.initiative.cmp(&other.initiative)
+		other.initiative.cmp(&self.initiative)
 	}
 }
 impl PartialOrd for InitiativeEntry {
