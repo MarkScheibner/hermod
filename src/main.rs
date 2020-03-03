@@ -31,7 +31,8 @@ pub struct JoinMessage {
 }
 
 
-#[get("/", rank = 2)]
+
+#[get("/join")]
 pub fn render_join() -> Template {
 	let ctx: HashMap<String, String> = HashMap::new();
 	Template::render("join", ctx)
@@ -82,6 +83,10 @@ pub fn render_state(_player: Player, tracker: State<Tracker>) -> Template {
 	let mut ctx: HashMap<String, String> = HashMap::new();
 	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
 	Template::render("status", ctx)
+}
+#[get("/", rank = 3)]
+pub fn redirect_join() -> Redirect {
+	Redirect::to("/join")
 }
 
 #[get("/tracker")]
