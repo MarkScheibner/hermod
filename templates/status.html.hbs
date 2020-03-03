@@ -9,29 +9,24 @@
 			crossorigin="anonymous">
 		<title>Hermod</title>
 	</head>
-	<!--<body onload="update_inits(); setInterval(update_inits, 500);">-->
+	<body onload="update_inits(); setInterval(update_inits, 1000);">
 	<body>
 		<div class="container mt-2">
 			<h1 align="center">Hermod</h1>
 			<!--<h3 align="center" class="pb-2">Dungeon-Master: {{game_master}}</h2>-->
-			<button class="btn btn-primary btn-block" onclick="update_inits();"> Reload Tracker </button>
+			<!--<button class="btn btn-primary btn-block" onclick="update_inits();"> Reload Tracker </button>-->
 			<a class="btn btn-primary btn-block" href="/add"> Roll for Initiative! </a>
 			<div class="my-3">
 				<ul id="ini-list" class="list-group mt-3"></ul>
 			</div>
-			<!--{{#if is_master}}
-			<div class="btn-group" role="group" style="width:100%" aria-label="Basic example">
-				<button class="btn btn-danger" onclick="remove_all();"> Remove all entries </button>
-				<button class="btn btn-success" onclick="next();"> Next </button>
+			<div class="btn-group" role="group" style="width:100%">
+				<button class="btn btn-danger w-50 mr-2" onclick="remove_all();"> Remove all entries </button>
+				<button class="btn btn-success w-50 ml-2" onclick="next();"> Next </button>
 			</div>
-			{{/if}}-->
 		</div>
 		
 		<script>
 			function update_inits() {
-				// TODO we could move this to the backend, having the API return html, such that we just do
-				// TODO $("#ini-list").html(result)
-				// TODO however, this might not be what we want to do
 				$.ajax({
 					url: "/tracker",
 					dataType: "json",
@@ -45,14 +40,17 @@
 				})
 			}
 			function make_entry(ini) {
-				//var button_str = `<button class="btn btn-danger" id=ini-${ini["id"]} onclick='remove_entry(${ini["id"]});'>x</button>`
-				//button_str =  (ini["owner_id"] == {{ user_id }} || {{is_master}} ? button_str : '');
-				var button_str = "";
-				return `<li class="list-group-item d-flex justify-content-between align-items-center mt-1">`
-				     + `<div><b>${ini["entry_name"]}</b><br/><font color="#c0c0c0">${ini["creator_name"]}</font></div>`
-				     + `<div><span class="sr-only">Initiative of </span>${button_str} ${ini["initiative"]}</div></li>`
+				// TODO make the remove button somewhat pretty:
+				// |------------------------------| |---|
+				// | entry_name               ini | | x |
+				// |------------------------------| |---|
+				var button_str = `<button class="btn btn-danger" onclick='remove_entry(${ini["entry_id"]});'>x</button>`
+				return `<li id=entry-${ini["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">
+				<div><b>${ini["entry_name"]}</b><br/><font color="#c0c0c0">${ini["creator_name"]}</font></div>
+				<div><span class="sr-only">Initiative of </span>${button_str} ${ini["initiative"]}</div></li>`
 			}
 			function remove_entry(id) {
+				// TODO also authenticate on client, so we can remove the element immediately
 				$.ajax({
 					type: "POST",
 					url: "/remove/" + id,
@@ -61,7 +59,6 @@
 					}
 				})
 			}
-			/*{{#if is_master}}
 			function remove_all() {
 				$.ajax({
 					type: "POST",
@@ -80,7 +77,6 @@
 					}
 				})
 			}
-			{{/if}}*/
 		</script>
 		
 		{{state_str}}
