@@ -1,5 +1,5 @@
 use crate::AddEntryMessage; // TODO move this here?
-use crate::Player;
+use crate::session::Player;
 
 use std::collections::BinaryHeap;
 use std::sync::RwLock;

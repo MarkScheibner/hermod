@@ -1,10 +1,10 @@
 #![feature(never_type, proc_macro_hygiene, decl_macro)]
 
 mod tracker;
+mod session;
 
-use std::sync::RwLock;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::RwLock;
 
 extern crate base64;
 extern crate rand;
@@ -14,36 +14,11 @@ use rand::RngCore;
 use rocket::State;
 use rocket::response::Redirect;
 use rocket::http::{Cookie, Cookies};
-use rocket::request::{Form, FromForm, Request, FromRequest, Outcome};
+use rocket::request::{Form, FromForm};
 use rocket_contrib::{json::Json, templates::Template};
-use serde::{Serialize, Deserialize};
 
 use tracker::*;
-
-type DungeonMaster = Option<(String, String)>;
-type SessionManager = RwLock<HashMap<String, Player>>;
-
-static USER_COUNT: AtomicU32 = AtomicU32::new(1);
-static DUNGEON_MASTER: DungeonMaster = None;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Player {
-	user_name: String,
-	user_id: u32
-}
-impl<'a, 'r> FromRequest<'a, 'r> for Player {
-	type Error = ();
-	
-	fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
-		let session_manager = req.guard::<State<SessionManager>>()?;
-		let session_manager = session_manager.read().unwrap(); // TODO handle this?
-		let p = req.cookies().get("session").map(|c| c.value()).and_then(|c| session_manager.get(c));
-		match p {
-			Some(player) => Outcome::Success(player.clone()),
-			None => Outcome::Forward(())
-		}
-	}
-}
+use session::*;
 
 #[derive(FromForm)]
 pub struct AddEntryMessage {
@@ -55,14 +30,6 @@ pub struct AddEntryMessage {
 #[derive(FromForm)]
 pub struct JoinMessage {
 	user_name: String
-}
-impl From<JoinMessage> for Player {
-	fn from(msg: JoinMessage) -> Player {
-		Player {
-			user_name: msg.user_name,
-			user_id: crate::USER_COUNT.fetch_add(1, Ordering::SeqCst)
-		}
-	}
 }
 
 
@@ -114,10 +81,9 @@ pub fn get_tracker(tracker: State<Tracker>) -> Json<TrackerState> {
 
 pub fn main() {
 	rocket::ignite()
-		.manage(RwLock::from(InitiativeTracker::new()))
-		.manage(RwLock::from(HashMap::<String, Player>::new()))
-		.manage(None::<DungeonMaster>)
-		.manage(AtomicU32::from(0))
+		.manage(Tracker::default())
+		.manage(SessionManager::default())
+		.manage(MasterCookie::default())
 		.mount("/", routes![render_join, handle_join, render_add, handle_add, render_state, get_tracker])
 		.attach(Template::fairing())
 		.launch();
