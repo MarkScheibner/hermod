@@ -66,16 +66,28 @@ pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: St
 }
 
 #[post("/remove/all")]
-pub fn handle_remove_all(tracker: State<Tracker>) -> Status {
+pub fn handle_remove_all(_dm: DungeonMaster, tracker: State<Tracker>) -> Status {
 	let mut tracker = tracker.write().unwrap();
 	tracker.remove_all();
 	Status::NoContent
 }
 #[post("/remove/<entry_id>")]
-pub fn handle_remove(entry_id: u32, tracker: State<Tracker>) -> Status {
+pub fn handle_remove_by_dm(_dm: DungeonMaster, entry_id: u32, tracker: State<Tracker>) -> Status {
 	let mut tracker = tracker.write().unwrap();
 	tracker.remove(entry_id);
 	Status::NoContent
+}
+#[post("/remove/<entry_id>", rank = 2)]
+pub fn handle_remove(initiator: Player, entry_id: u32, tracker: State<Tracker>) -> Status {
+	let mut tracker = tracker.write().unwrap();
+	match tracker.get_entry_by_id(entry_id) {
+		Some(entry) if entry.owned_by(&initiator) => {
+			tracker.remove(entry_id);
+			Status::NoContent
+		},
+		Some(_) => Status::Unauthorized,
+		_ => Status::NotFound
+	}
 }
 
 #[get("/")]

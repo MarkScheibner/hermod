@@ -36,6 +36,10 @@ impl InitiativeTracker {
 		initative_list
 	}
 	
+	pub fn get_entry_by_id(&self, entry_id: u32) -> Option<&InitiativeEntry> {
+		let mut element_it = self.initiatives.iter().filter(|e| e.entry_id == entry_id);
+		element_it.next()
+	}
 	pub fn remove(&mut self, entry_id: u32) {
 		// clone all elements except the one to remove into iterator
 		let element_it = self.initiatives.clone().into_iter().filter(|e| e.entry_id != entry_id);
@@ -77,6 +81,10 @@ impl InitiativeEntry {
 			creator_id: creator.user_id,
 			initiative: entry_data.initiative_value
 		}
+	}
+	
+	pub fn owned_by(&self, player: &Player) -> bool {
+		player.user_id == self.entry_id
 	}
 }
 impl Ord for InitiativeEntry {
