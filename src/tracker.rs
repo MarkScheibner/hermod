@@ -32,8 +32,7 @@ impl InitiativeTracker {
 	}
 	
 	pub fn get_initiative_list(&self) -> Vec<InitiativeEntry> {
-		let mut initative_list = self.initiatives.clone().into_sorted_vec();
-		initative_list.rotate_left(self.offset);
+		let initative_list = self.initiatives.clone().into_sorted_vec();
 		initative_list
 	}
 	
