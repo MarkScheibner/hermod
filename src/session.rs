@@ -8,13 +8,32 @@ use rocket::State;
 use rocket::request::{Request, FromRequest, Outcome};
 use serde::{Serialize, Deserialize};
 
-pub type MasterCookie = RwLock<Option<String>>;
-pub type SessionManager = RwLock<HashMap<String, Player>>;
-
+pub type SessionState = RwLock<SessionManager>;
 
 static USER_COUNT: AtomicU32 = AtomicU32::new(1);
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Default)]
+pub struct SessionManager {
+	sessions: HashMap<String, Player>,
+	master_cookie: Option<String>
+}
+impl SessionManager {
+	pub fn get_session(&self, cookie: &String) -> Option<&Player> {
+		self.sessions.get(cookie)
+	}
+	pub fn add_session(&mut self, cookie: String, session: Player) {
+		self.sessions.insert(cookie, session);
+	}
+	
+	pub fn is_master_session(&self, cookie: &String) -> bool {
+		self.master_cookie.is_some() && self.master_cookie.as_ref().unwrap().eq(cookie)
+	}
+	pub fn set_master_cookie(&mut self, cookie: String) {
+		self.master_cookie = Some(cookie);
+	}
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Player {
 	pub user_name: String,
 	pub user_id: u32
@@ -23,9 +42,9 @@ impl<'a, 'r> FromRequest<'a, 'r> for Player {
 	type Error = ();
 	
 	fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
-		let session_manager = req.guard::<State<SessionManager>>()?;
-		let session_manager = session_manager.read().unwrap(); // TODO handle this?
-		let p = req.cookies().get("session").map(|c| c.value()).and_then(|c| session_manager.get(c));
+		let sessions = req.guard::<State<SessionState>>()?;
+		let sessions = sessions.read().unwrap(); // TODO handle this?
+		let p = req.cookies().get("session").map(|c| c.value()).and_then(|c| sessions.get_session(&c.into()));
 		match p {
 			Some(player) => Outcome::Success(player.clone()),
 			None => Outcome::Forward(())
@@ -42,23 +61,18 @@ impl From<JoinMessage> for Player {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DungeonMaster(Player);
+pub struct DungeonMaster();
 impl<'a, 'r> FromRequest<'a, 'r> for DungeonMaster {
 	type Error = ();
 	
 	fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
-		let master_cookie = req.guard::<State<MasterCookie>>()?;
-		let master_cookie = master_cookie.read().unwrap(); // TODO handle this?
-		let session_manager = req.guard::<State<SessionManager>>()?;
-		let session_manager = session_manager.read().unwrap(); // TODO handle this?
+		let sessions = req.guard::<State<SessionState>>()?;
+		let sessions = sessions.read().unwrap(); // TODO handle this?
 		
 		let user_cookie = req.cookies().get("session").map(|c| c.value().to_string());
-		let p = user_cookie.clone().and_then(|c| session_manager.get(&c));
-		match (master_cookie.clone(), p) {
-			(None, _) | (_, None) => Outcome::Forward(()),
-			(Some(cookie), Some(player)) if cookie.eq(&user_cookie.unwrap()) // unwrap is fine, p is not None
-			  => Outcome::Success(DungeonMaster(player.clone())),
-			_ => Outcome::Forward(())
+		match user_cookie.map(|c| sessions.is_master_session(&c)) {
+			None | Some(false) => Outcome::Forward(()),
+			Some(true) => Outcome::Success(DungeonMaster())
 		}
 	}
 }
