@@ -13,9 +13,19 @@
 		<div class="container" >
 			<h1 align="center">Hermod</h1>
 			<div class="d-flex flex-column justify-content-center align-items-center" style="height:100%; height:100vh">
-				<form id="join-form" class="p-2" style="width:100%;" action="/join" method="POST">
+				<form id="join-form" class="collapse show multicollapse p-2" style="width:100%;" action="/join" method="POST">
 					<input name="user_name" type="text" class="form-control mb-2" style="text-align:center"
 						   placeholder="Your Name" />
+					<button type="submit" id="submit" class="btn btn-success btn-block"> Join </button>
+				</form>
+				<p class="collapse show multicollapse">
+					Are you the Dungeonmaster? Then <a data-toggle="collapse" data-target=".multicollapse" href="#">click here.</a>
+				</p>
+				<form id="dmLogin" class="collapse multicollapse p-2" style="width:100%;" action="/join" method="POST">
+					<input name="user_name" type="text" class="form-control mb-2" style="text-align:center"
+						   placeholder="Your Name" />
+					<input name="password" type="password" class="form-control mb-2" style="text-align:center"
+						   placeholer="Password" />
 					<button type="submit" id="submit" class="btn btn-success btn-block"> Join </button>
 				</form>
 			</div>

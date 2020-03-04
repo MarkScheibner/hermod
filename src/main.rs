@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[macro_use] extern crate rocket;
 
 use rocket::State;
-use rocket::response::Redirect;
+use rocket::response::{Response, Redirect};
 use rocket::http::{Cookie, Cookies, Status};
 use rocket::request::{Form, FromForm};
 use rocket_contrib::{json::Json, templates::Template};
@@ -24,7 +24,8 @@ pub struct AddEntryMessage {
 
 #[derive(FromForm)]
 pub struct JoinMessage {
-	user_name: String
+	user_name: String,
+	password: Option<String>
 }
 
 
@@ -49,46 +50,36 @@ pub fn render_join() -> Template {
 	Template::render("join", ctx)
 }
 #[post("/join", data="<form_data>")]
-pub fn handle_join(mut cookies: Cookies,
+pub fn handle_join<'r>(mut cookies: Cookies,
                    form_data: Form<JoinMessage>,
                    sessions: State<SessionState>)
--> Redirect {
+-> Response<'r> {
+	let mut sessions = sessions.write().expect("Error trying to attain lock for SessionManager");
+	
+	// generate cookie for new session
+	let cookie = generate_cookie();
+	// handle password
+	let maybe_password = &form_data.password;
+	let response = match maybe_password {
+		Some(pw) if pw.eq("MasterPassword") => {
+			sessions.set_master_cookie(cookie.clone());
+			Response::build().status(Status::SeeOther).raw_header("Location", "/").finalize()
+		},
+		Some(_) => {
+			Response::build().status(Status::Forbidden).finalize()
+		},
+		_ => Response::build().status(Status::SeeOther).raw_header("Location", "/").finalize()
+	};
+	
 	// construct Player from given data
 	let player = Player::from(form_data.into_inner());
-	
 	// add player to session manager with given cookie 
-	let cookie = generate_cookie();
-	let mut sessions = sessions.write().expect("Error trying to attain lock for SessionManager");
 	sessions.add_session(cookie.clone(), player);
-	// add cookie
-	cookies.add(Cookie::new("session", cookie));
-	Redirect::to("/")
-}
-
-#[get("/masterjoin")]
-pub fn render_master_join() -> Template {
-	let ctx: HashMap<String, String> = HashMap::new();
-	Template::render("masterjoin", ctx)
-}
-#[post("/masterjoin", data="<form_data>")]
-pub fn handle_master_join(mut cookies: Cookies,
-                   form_data: Form<JoinMessage>,
-                   sessions: State<SessionState>)
--> Redirect {
-	// construct Player from given data
-	let player = Player::from(form_data.into_inner());
-	
-	// add player to session manager with given cookie and save cookie of DM-session
-	let cookie = generate_cookie();
-	let mut sessions = sessions.write().expect("Error trying to attain lock for SessionManager");
-	sessions.add_session(cookie.clone(), player);
-	sessions.set_master_cookie(cookie.clone());
 	
 	// add cookie
 	cookies.add(Cookie::new("session", cookie));
-	Redirect::to("/")
+	response
 }
-
 
 #[get("/add")]
 pub fn render_add() -> Template {
@@ -145,7 +136,7 @@ pub fn main() {
 	rocket::ignite()
 		.manage(Tracker::default())
 		.manage(SessionState::default())
-		.mount("/", routes![render_join, handle_join, render_master_join, handle_master_join,
+		.mount("/", routes![render_join, handle_join,
 		                    render_add, handle_add,
 		                    handle_remove_by_dm, handle_remove, handle_remove_all,
 		                    render_dm_state, render_state, redirect_join,
