@@ -28,6 +28,20 @@ pub struct JoinMessage {
 }
 
 
+#[get("/")]
+pub fn render_dm_state(_dm: DungeonMaster) -> Template {
+	let ctx: HashMap<String, String> = HashMap::new();
+	Template::render("status", ctx)
+}
+#[get("/", rank = 2)]
+pub fn render_state(_player: Player) -> Template {
+	let ctx: HashMap<String, String> = HashMap::new();
+	Template::render("status", ctx)
+}
+#[get("/", rank = 3)]
+pub fn redirect_join() -> Redirect {
+	Redirect::to("/join")
+}
 
 #[get("/join")]
 pub fn render_join() -> Template {
@@ -119,21 +133,6 @@ pub fn handle_next(_dm: DungeonMaster, tracker:State<Tracker>) -> Status {
 	let mut tracker = tracker.write().unwrap();
 	tracker.next();
 	Status::NoContent
-}
-
-#[get("/")]
-pub fn render_dm_state(_dm: DungeonMaster) -> Template {
-	let ctx: HashMap<String, String> = HashMap::new();
-	Template::render("status", ctx)
-}
-#[get("/", rank = 2)]
-pub fn render_state(_player: Player) -> Template {
-	let ctx: HashMap<String, String> = HashMap::new();
-	Template::render("status", ctx)
-}
-#[get("/", rank = 3)]
-pub fn redirect_join() -> Redirect {
-	Redirect::to("/join")
 }
 
 #[get("/tracker")]
