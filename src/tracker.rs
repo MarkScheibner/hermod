@@ -83,7 +83,7 @@ impl InitiativeEntry {
 	}
 	
 	pub fn owned_by(&self, player: &Player) -> bool {
-		player.user_id == self.entry_id
+		player.user_id == self.creator_id
 	}
 }
 impl Ord for InitiativeEntry {
