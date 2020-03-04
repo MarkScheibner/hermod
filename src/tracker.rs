@@ -69,7 +69,7 @@ pub struct InitiativeEntry {
 	entry_id: u32,
 	creator_name: String,
 	creator_id: u32,
-	initiative: u32
+	initiative: i32
 }
 impl InitiativeEntry {
 	pub fn new(entry_data: AddEntryMessage, creator: &Player) -> InitiativeEntry {

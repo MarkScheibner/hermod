@@ -19,7 +19,7 @@ use session::*;
 #[derive(FromForm)]
 pub struct AddEntryMessage {
 	entry_name: String,
-	initiative_value: u32
+	initiative_value: i32
 }
 
 #[derive(FromForm)]
