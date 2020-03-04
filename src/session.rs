@@ -18,14 +18,14 @@ pub struct SessionManager {
 	master_cookie: Option<String>
 }
 impl SessionManager {
-	pub fn get_session(&self, cookie: &String) -> Option<&Player> {
+	pub fn get_session(&self, cookie: &str) -> Option<&Player> {
 		self.sessions.get(cookie)
 	}
 	pub fn add_session(&mut self, cookie: String, session: Player) {
 		self.sessions.insert(cookie, session);
 	}
 	
-	pub fn is_master_session(&self, cookie: &String) -> bool {
+	pub fn is_master_session(&self, cookie: &str) -> bool {
 		self.master_cookie.is_some() && self.master_cookie.as_ref().unwrap().eq(cookie)
 	}
 	pub fn set_master_cookie(&mut self, cookie: String) {
@@ -44,8 +44,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for Player {
 	fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
 		let sessions = req.guard::<State<SessionState>>()?;
 		let sessions = sessions.read().unwrap(); // TODO handle this?
-		let p = req.cookies().get("session").map(|c| c.value()).and_then(|c| sessions.get_session(&c.into()));
-		match p {
+		let user = req.cookies().get("session").map(|c| c.value()).and_then(|c| sessions.get_session(c));
+		match user {
 			Some(player) => Outcome::Success(player.clone()),
 			None => Outcome::Forward(())
 		}

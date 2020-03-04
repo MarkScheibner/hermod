@@ -32,8 +32,7 @@ impl InitiativeTracker {
 	}
 	
 	pub fn get_initiative_list(&self) -> Vec<InitiativeEntry> {
-		let initative_list = self.initiatives.clone().into_sorted_vec();
-		initative_list
+		self.initiatives.clone().into_sorted_vec()
 	}
 	
 	pub fn get_entry_by_id(&self, entry_id: u32) -> Option<&InitiativeEntry> {
