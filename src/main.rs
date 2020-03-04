@@ -5,11 +5,8 @@ mod session;
 
 use std::collections::HashMap;
 
-extern crate base64;
-extern crate rand;
 #[macro_use] extern crate rocket;
 
-use rand::RngCore;
 use rocket::State;
 use rocket::response::Redirect;
 use rocket::http::{Cookie, Cookies, Status};
@@ -157,10 +154,3 @@ pub fn main() {
 		.attach(Template::fairing())
 		.launch();
 }
-
-pub fn generate_cookie() -> String {
-	let mut cookie_bytes = [0; 16];
-	rand::thread_rng().fill_bytes(&mut cookie_bytes);
-	base64::encode(&cookie_bytes)
-}
-

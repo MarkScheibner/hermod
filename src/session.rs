@@ -7,6 +7,7 @@ use crate::JoinMessage;
 use rocket::State;
 use rocket::request::{Request, FromRequest, Outcome};
 use serde::{Serialize, Deserialize};
+use rand::RngCore;
 
 pub type SessionState = RwLock<SessionManager>;
 
@@ -75,4 +76,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for DungeonMaster {
 			Some(true) => Outcome::Success(DungeonMaster())
 		}
 	}
+}
+
+pub fn generate_cookie() -> String {
+	let mut cookie_bytes = [0; 16];
+	rand::thread_rng().fill_bytes(&mut cookie_bytes);
+	base64::encode(&cookie_bytes)
 }
