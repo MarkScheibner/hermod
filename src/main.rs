@@ -44,6 +44,8 @@ pub fn handle_join(mut cookies: Cookies,
 -> Redirect {
 	// construct Player from given data
 	let player = Player::from(form_data.into_inner());
+	
+	// add player to session manager with given cookie 
 	let cookie = generate_cookie();
 	let mut sm = session_manager.write().expect("Error trying to attain lock for SessionManager");
 	sm.insert(cookie.clone(), player);
@@ -51,6 +53,33 @@ pub fn handle_join(mut cookies: Cookies,
 	cookies.add(Cookie::new("session", cookie));
 	Redirect::to("/")
 }
+
+#[get("/masterjoin")]
+pub fn render_master_join() -> Template {
+	let ctx: HashMap<String, String> = HashMap::new();
+	Template::render("masterjoin", ctx)
+}
+#[post("/masterjoin", data="<form_data>")]
+pub fn handle_master_join(mut cookies: Cookies,
+                   form_data: Form<JoinMessage>,
+                   session_manager: State<SessionManager>,
+                   master_cookie: State<MasterCookie>)
+-> Redirect {
+	// construct Player from given data
+	let player = Player::from(form_data.into_inner());
+	
+	// add player to session manager with given cookie and save cookie of DM-session
+	let cookie = generate_cookie();
+	let mut sm = session_manager.write().expect("Error trying to attain lock for SessionManager");
+	let mut master_cookie = master_cookie.write().unwrap(); // TODO handle this
+	sm.insert(cookie.clone(), player);
+	*master_cookie = Some(cookie.clone());
+	
+	// add cookie
+	cookies.add(Cookie::new("session", cookie));
+	Redirect::to("/")
+}
+
 
 #[get("/add")]
 pub fn render_add() -> Template {
@@ -98,15 +127,13 @@ pub fn handle_next(_dm: DungeonMaster, tracker:State<Tracker>) -> Status {
 }
 
 #[get("/")]
-pub fn render_dm_state(_dm: DungeonMaster, tracker: State<Tracker>) -> Template {
-	let mut ctx: HashMap<String, String> = HashMap::new();
-	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
+pub fn render_dm_state(_dm: DungeonMaster) -> Template {
+	let ctx: HashMap<String, String> = HashMap::new();
 	Template::render("status", ctx)
 }
 #[get("/", rank = 2)]
-pub fn render_state(_player: Player, tracker: State<Tracker>) -> Template {
-	let mut ctx: HashMap<String, String> = HashMap::new();
-	ctx.insert("state_str".into(), format!("{:?}", *tracker.read().unwrap()));
+pub fn render_state(_player: Player) -> Template {
+	let ctx: HashMap<String, String> = HashMap::new();
 	Template::render("status", ctx)
 }
 #[get("/", rank = 3)]
@@ -125,11 +152,11 @@ pub fn main() {
 		.manage(Tracker::default())
 		.manage(SessionManager::default())
 		.manage(MasterCookie::default())
-		.mount("/", routes![render_join, handle_join,
+		.mount("/", routes![render_join, handle_join, render_master_join, handle_master_join,
 		                    render_add, handle_add,
 		                    handle_remove_by_dm, handle_remove, handle_remove_all,
 		                    render_dm_state, render_state, redirect_join,
-		                    get_tracker])
+		                    get_tracker, handle_next])
 		.attach(Template::fairing())
 		.launch();
 }
