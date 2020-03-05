@@ -81,11 +81,6 @@ pub fn handle_join<'r>(mut cookies: Cookies,
 	response
 }
 
-#[get("/add")]
-pub fn render_add() -> Template {
-	let ctx: HashMap<String, String> = HashMap::new();
-	Template::render("add", ctx)
-}
 #[post("/add", data="<entry_data>")]
 pub fn handle_add(sender: Player, entry_data: Form<AddEntryMessage>, tracker: State<Tracker>) -> Redirect {
 	let mut tracker = tracker.write().expect("Error trying to attain lock for TrackerState");

@@ -10,12 +10,30 @@
 		<title>Hermod</title>
 	</head>
 	<body onload="update_inits(); setInterval(update_inits, 1000);">
-	<body>
 		<div class="container mt-2">
 			<h1 align="center">Hermod</h1>
 			<!--<h3 align="center" class="pb-2">Dungeon-Master: {{game_master}}</h2>-->
 			<!--<button class="btn btn-primary btn-block" onclick="update_inits();"> Reload Tracker </button>-->
-			<a class="btn btn-primary btn-block" href="/add"> Roll for Initiative! </a>
+			<button class="btn btn-primary btn-block" data-toggle="modal" data-target="#add">
+				Roll for Initiative!
+			</button>
+			<div class="modal fade" id="add" tabindex="-1" role="dialog" aria-hidden="true"><div class="modal-dialog" role="document"><div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Add Initiative</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+				</div>
+				<div class="modal-body">
+					<form id="ini-form" action="/add" method="POST">
+						<div class="input-group mb-2">
+							<input name="entry_name" type="text" class="form-control" placeholder="Name of your Character" />
+							<input name="initiative_value" type="number" class="input-group-append" placeholder="Initiative" />
+						</div>
+						<button type="submit" id="submit" class="btn btn-success btn-block"> Submit </button>
+					</form>
+				</div>
+			</div></div></div>
 			<div class="my-3">
 				<ul id="ini-list" class="list-group mt-3"></ul>
 			</div>
@@ -44,10 +62,18 @@
 				// |------------------------------| |---|
 				// | entry_name               ini | | x |
 				// |------------------------------| |---|
+				var entry_name = trim_string_to_length(ini["entry_name"], 100);
+				var creator_name = trim_string_to_length(ini["creator_name"], 100);
 				var button_str = `<button class="btn btn-danger" onclick='remove_entry(${ini["entry_id"]});'>x</button>`
 				return `<li id=entry-${ini["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">
-				<div><b>${ini["entry_name"]}</b><br/><font color="#c0c0c0">${ini["creator_name"]}</font></div>
+				<div><b>${entry_name}</b><br/><font color="#c0c0c0">${creator_name}</font></div>
 				<div><span class="sr-only">Initiative of </span>${button_str} ${ini["initiative"]}</div></li>`
+			}
+			function trim_string_to_length(string, length) {
+				if(string.length > length) {
+					return string.substring(0, length) + "...";
+				}
+				return string;
 			}
 			function remove_entry(id) {
 				// TODO also authenticate on client, so we can remove the element immediately
