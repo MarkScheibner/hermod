@@ -40,15 +40,11 @@ pub fn render_state(_player: Player) -> Template {
 	Template::render("status", ctx)
 }
 #[get("/", rank = 3)]
-pub fn redirect_join() -> Redirect {
-	Redirect::to("/join")
-}
-
-#[get("/join")]
 pub fn render_join() -> Template {
 	let ctx: HashMap<String, String> = HashMap::new();
 	Template::render("join", ctx)
 }
+
 #[post("/join", data="<form_data>")]
 pub fn handle_join<'r>(mut cookies: Cookies,
                    form_data: Form<JoinMessage>,
@@ -131,10 +127,8 @@ pub fn main() {
 	rocket::ignite()
 		.manage(Tracker::default())
 		.manage(SessionState::default())
-		.mount("/", routes![render_join, handle_join,
-		                    render_add, handle_add,
-		                    handle_remove_by_dm, handle_remove, handle_remove_all,
-		                    render_dm_state, render_state, redirect_join,
+		.mount("/", routes![handle_join, handle_add, handle_remove_by_dm, handle_remove, handle_remove_all,
+		                    render_dm_state, render_state, render_join,
 		                    get_tracker, handle_next])
 		.attach(Template::fairing())
 		.launch();
