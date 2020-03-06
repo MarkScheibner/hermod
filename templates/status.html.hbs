@@ -20,9 +20,9 @@
 			<div class="modal fade" id="add" tabindex="-1" role="dialog" aria-hidden="true"><div class="modal-dialog" role="document"><div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Add Initiative</h5>
-						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">&times;</span>
-						</button>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
 				</div>
 				<div class="modal-body">
 					<form id="ini-form" action="/add" method="POST">
@@ -35,7 +35,7 @@
 				</div>
 			</div></div></div>
 			<div class="my-3">
-				<ul id="ini-list" class="list-group mt-3"></ul>
+				<ul id="ini-list" class="list-group mt-3"> </ul>
 			</div>
 			<div class="btn-group" role="group" style="width:100%">
 				<button class="btn btn-danger w-50 mr-2" onclick="remove_all();"> Remove all entries </button>
@@ -53,21 +53,19 @@
 						var ini_list = result[0];
 						ini_list = ini_list.splice(result[1]).concat(ini_list);
 						ini_list.forEach(ini_entry => list.append(make_entry(ini_entry)));
-						list.children().first().addClass("border border-primary");
+						list.children().first().addClass("border border-primary shadow-lg");
 					}
 				})
 			}
-			function make_entry(ini) {
-				// TODO make the remove button somewhat pretty:
-				// |------------------------------| |---|
-				// | entry_name               ini | | x |
-				// |------------------------------| |---|
-				var entry_name = trim_string_to_length(ini["entry_name"], 100);
-				var creator_name = trim_string_to_length(ini["creator_name"], 100);
-				var button_str = `<button class="btn btn-danger" onclick='remove_entry(${ini["entry_id"]});'>x</button>`
-				return `<li id=entry-${ini["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">
-				<div><b>${entry_name}</b><br/><font color="#c0c0c0">${creator_name}</font></div>
-				<div><span class="sr-only">Initiative of </span>${button_str} ${ini["initiative"]}</div></li>`
+			function make_entry(entry) {
+				var entry_name = trim_string_to_length(entry["entry_name"], 100);
+				var creator_name = trim_string_to_length(entry["creator_name"], 100);
+				
+				// TODO only show button on own entries
+				var close_button = `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
+				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span>${close_button} ${entry["initiative"]}</div>`;
+				
+				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
 			}
 			function trim_string_to_length(string, length) {
 				if(string.length > length) {
@@ -76,32 +74,13 @@
 				return string;
 			}
 			function remove_entry(id) {
-				// TODO also authenticate on client, so we can remove the element immediately
-				$.ajax({
-					type: "POST",
-					url: "/remove/" + id,
-					success: function(result) {
-						$("#ini-" + id).remove();
-					}
-				})
+				$.ajax({ type: "POST", url: "/remove/" + id, success: function(result) { $("#ini-" + id).remove(); } })
 			}
 			function remove_all() {
-				$.ajax({
-					type: "POST",
-					url: "/remove/all",
-					success: function(result) {
-						$("#ini-list").empty();
-					}
-				})
+				$.ajax({type: "POST", url: "/remove/all", success: function(result) { $("#ini-list").empty(); } })
 			}
 			function next() {
-				$.ajax({
-					type: "POST",
-					url: "/next",
-					success: function(result) {
-						update_inits();
-					}
-				})
+				$.ajax({type: "POST", url: "/next", success: function(result) { update_inits(); } })
 			}
 		</script>
 		
