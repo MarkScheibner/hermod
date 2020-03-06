@@ -8,8 +8,9 @@ use std::collections::HashMap;
 #[macro_use] extern crate rocket;
 
 use rocket::State;
-use rocket::response::{Response, Redirect};
+use rocket::fairing::AdHoc;
 use rocket::http::{Cookie, Cookies, Status};
+use rocket::response::{Response, Redirect};
 use rocket::request::{Form, FromForm};
 use rocket_contrib::{json::Json, templates::Template};
 
@@ -47,8 +48,9 @@ pub fn render_join() -> Template {
 
 #[post("/join", data="<form_data>")]
 pub fn handle_join<'r>(mut cookies: Cookies,
-                   form_data: Form<JoinMessage>,
-                   sessions: State<SessionState>)
+                       form_data: Form<JoinMessage>,
+                       sessions: State<SessionState>,
+                       master_pw: State<String>)
 -> Response<'r> {
 	let mut sessions = sessions.write().expect("Error trying to attain lock for SessionManager");
 	
@@ -57,7 +59,7 @@ pub fn handle_join<'r>(mut cookies: Cookies,
 	// handle password
 	let maybe_password = &form_data.password;
 	let response = match maybe_password {
-		Some(pw) if pw.eq("MasterPassword") => {
+		Some(pw) if pw.eq(&*master_pw) => {
 			sessions.set_master_cookie(cookie.clone());
 			Response::build().status(Status::SeeOther).raw_header("Location", "/").finalize()
 		},
@@ -123,10 +125,15 @@ pub fn get_tracker(tracker: State<Tracker>) -> Json<TrackerState> {
 	Json((tracker.get_initiative_list(), tracker.get_offset()))
 }
 
+
 pub fn main() {
 	rocket::ignite()
 		.manage(Tracker::default())
 		.manage(SessionState::default())
+		.attach(AdHoc::on_attach("Password Config", |rocket| {
+			let master_pw = rocket.config().get_str("masterpw").unwrap_or("MasterPassword").to_string();
+			Ok(rocket.manage(master_pw))
+		}))
 		.mount("/", routes![handle_join, handle_add, handle_remove_by_dm, handle_remove, handle_remove_all,
 		                    render_dm_state, render_state, render_join,
 		                    get_tracker, handle_next])
