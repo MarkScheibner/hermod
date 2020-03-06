@@ -37,10 +37,12 @@
 			<div class="my-3">
 				<ul id="ini-list" class="list-group mt-3"> </ul>
 			</div>
+			{{#unless player_id}}
 			<div class="btn-group" role="group" style="width:100%">
 				<button class="btn btn-danger w-50 mr-2" onclick="remove_all();"> Remove all entries </button>
 				<button class="btn btn-success w-50 ml-2" onclick="next();"> Next </button>
 			</div>
+			{{/unless}}
 		</div>
 		
 		<script>
@@ -61,8 +63,11 @@
 				var entry_name = trim_string_to_length(entry["entry_name"], 100);
 				var creator_name = trim_string_to_length(entry["creator_name"], 100);
 				
-				// TODO only show button on own entries
-				var close_button = `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
+				{{#if player_id}}
+				var close_button = {{player_id}} == entry["creator_id"] ? `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>` : '';
+				{{else}}
+				var close_button = `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+				{{/if}}
 				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span>${close_button} ${entry["initiative"]}</div>`;
 				
 				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`

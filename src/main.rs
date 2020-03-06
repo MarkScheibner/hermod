@@ -32,12 +32,14 @@ pub struct JoinMessage {
 
 #[get("/")]
 pub fn render_dm_state(_dm: DungeonMaster) -> Template {
-	let ctx: HashMap<String, String> = HashMap::new();
+	let mut ctx: HashMap<String, String> = HashMap::new();
+	ctx.insert("player_id".into(), "".into());
 	Template::render("status", ctx)
 }
 #[get("/", rank = 2)]
-pub fn render_state(_player: Player) -> Template {
-	let ctx: HashMap<String, String> = HashMap::new();
+pub fn render_state(player: Player) -> Template {
+	let mut ctx: HashMap<String, String> = HashMap::new();
+	ctx.insert("player_id".into(), player.user_id.to_string());
 	Template::render("status", ctx)
 }
 #[get("/", rank = 3)]
