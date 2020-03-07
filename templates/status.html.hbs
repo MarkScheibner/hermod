@@ -28,7 +28,7 @@
 					<form id="ini-form" action="/add" method="POST">
 						<div class="input-group mb-2">
 							<input name="entry_name" type="text" class="form-control" placeholder="Name of your Character" />
-							<input name="initiative_value" type="number" class="input-group-append" placeholder="Initiative" />
+							<input name="initiative_value" type="number" step="0.01" class="input-group-append" placeholder="Initiative" />
 						</div>
 						<button type="submit" id="submit" class="btn btn-success btn-block"> Submit </button>
 					</form>
@@ -68,7 +68,7 @@
 				{{else}}
 				var close_button = `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
 				{{/if}}
-				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span>${close_button} ${entry["initiative"]}</div>`;
+				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span>${close_button} ${Math.floor(entry["initiative"])}</div>`;
 				
 				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
 			}

@@ -63,13 +63,13 @@ impl InitiativeTracker {
 	}
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct InitiativeEntry {
 	entry_name: String,
 	entry_id: u32,
 	creator_name: String,
 	creator_id: u32,
-	initiative: i32
+	initiative: f32
 }
 impl InitiativeEntry {
 	pub fn new(entry_data: AddEntryMessage, creator: &Player) -> InitiativeEntry {
@@ -88,7 +88,7 @@ impl InitiativeEntry {
 }
 impl Ord for InitiativeEntry {
 	fn cmp(&self, other: &Self) -> Ordering {
-		other.initiative.cmp(&self.initiative)
+		other.initiative.partial_cmp(&self.initiative).unwrap_or(Ordering::Less)
 	}
 }
 impl PartialOrd for InitiativeEntry {
@@ -96,3 +96,4 @@ impl PartialOrd for InitiativeEntry {
 		Some(self.cmp(other))
 	}
 }
+impl Eq for InitiativeEntry {}
