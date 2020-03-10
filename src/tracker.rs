@@ -13,8 +13,7 @@ static ENTRY_COUNT: AtomicU32 = AtomicU32::new(0);
 pub type Tracker = RwLock<InitiativeTracker>;
 pub type TrackerState = (Vec<InitiativeEntry>, usize);
 
-// TODO this shouldn't derive Clone if possible
-#[derive(Clone, Default, Debug, Serialize)]
+#[derive(Default, Debug, Serialize)]
 pub struct InitiativeTracker {
 	initiatives: BinaryHeap<InitiativeEntry>,
 	offset: usize
