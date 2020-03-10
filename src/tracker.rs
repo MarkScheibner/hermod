@@ -69,7 +69,8 @@ pub struct InitiativeEntry {
 	entry_id: u32,
 	creator_name: String,
 	creator_id: u32,
-	initiative: f32
+	initiative: f32,
+	hidden: bool
 }
 impl InitiativeEntry {
 	pub fn new(entry_data: AddEntryMessage, creator: &Player) -> InitiativeEntry {
@@ -78,12 +79,17 @@ impl InitiativeEntry {
 			entry_id: ENTRY_COUNT.fetch_add(1, SOrdering::SeqCst),
 			creator_name: creator.user_name.clone(),
 			creator_id: creator.user_id,
-			initiative: entry_data.initiative_value
+			initiative: entry_data.initiative_value,
+			hidden: false
 		}
 	}
 	
 	pub fn owned_by(&self, player: &Player) -> bool {
 		player.user_id == self.creator_id
+	}
+	
+	pub fn is_hidden(&self) -> bool {
+		self.hidden
 	}
 }
 impl Ord for InitiativeEntry {
