@@ -34,7 +34,7 @@ pub struct JoinMessage {
 pub fn render_dm_state(_dm: DungeonMaster) -> Template {
 	let mut ctx: HashMap<String, String> = HashMap::new();
 	ctx.insert("player_id".into(), "".into());
-	Template::render("status", ctx)
+	Template::render("dm_status", ctx)
 }
 #[get("/", rank = 2)]
 pub fn render_state(player: Player) -> Template {
@@ -121,9 +121,17 @@ pub fn handle_next(_dm: DungeonMaster, tracker:State<Tracker>) -> Status {
 	Status::NoContent
 }
 
-#[get("/tracker")]
+#[get("/tracker", rank = 2)]
 pub fn get_tracker(tracker: State<Tracker>) -> Json<TrackerState> {
-	let tracker = tracker.read().unwrap().clone(); // TODO handle this
+	let tracker = tracker.read().unwrap(); // TODO handle this
+	let mut ini = tracker.get_initiative_list();
+	ini.retain(|e| !e.is_hidden());
+	Json((ini, tracker.get_offset()))
+}
+
+#[get("/tracker")]
+pub fn get_dm_tracker(_dm: DungeonMaster, tracker: State<Tracker>) -> Json<TrackerState> {
+	let tracker = tracker.read().unwrap(); // TODO handle this
 	Json((tracker.get_initiative_list(), tracker.get_offset()))
 }
 
@@ -138,7 +146,7 @@ pub fn main() {
 		}))
 		.mount("/", routes![handle_join, handle_add, handle_remove_by_dm, handle_remove, handle_remove_all,
 		                    render_dm_state, render_state, render_join,
-		                    get_tracker, handle_next])
+		                    get_dm_tracker, get_tracker, handle_next])
 		.attach(Template::fairing())
 		.launch();
 }

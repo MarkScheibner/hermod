@@ -1,0 +1,130 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link
+			rel="stylesheet"
+			href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+			crossorigin="anonymous">
+		<title>Hermod</title>
+	</head>
+	<body onload="update_inits(); setInterval(update_inits, 1000);">
+		<h1 align="center">Hermod</h1>
+		<h3 align="center" class="pb-2">Dungeon-Master: You!</h2>
+		<div class="row">
+			<div class="col-md-6 border-right"><div class="container mt-2 ml-2">
+				<h3 align="center">Initiative Tracker</h3>
+				<!--<button class="btn btn-primary btn-block" onclick="update_inits();"> Reload Tracker </button>-->
+				<button class="btn btn-primary btn-block" data-toggle="modal" data-target="#add">
+					Roll for Initiative!
+				</button>
+				<div class="modal fade" id="add" tabindex="-1" role="dialog" aria-hidden="true"><div class="modal-dialog" role="document"><div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Add Initiative</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<form id="ini-form" action="/add" method="POST">
+							<div class="input-group mb-2 row no-gutters">
+									<div class="col-8">
+										<input name="entry_name" type="text" class="form-control" placeholder="Name of your Character" />
+									</div>
+									<div class="col">
+										<input name="initiative_value" type="number" step="0.01" class="form-control" placeholder="Initiative" />
+									</div>
+							</div>
+							<button type="submit" id="submit" class="btn btn-success btn-block"> Submit </button>
+						</form>
+					</div>
+				</div></div></div>
+				<div class="my-3">
+					<ul id="ini-list" class="list-group mt-3"> </ul>
+				</div>
+				{{#unless player_id}}
+				<div class="btn-group" role="group" style="width:100%">
+					<button class="btn btn-danger w-50 mr-2" onclick="remove_all();"> Remove all entries </button>
+					<button class="btn btn-success w-50 ml-2" onclick="next();"> Next </button>
+				</div>
+				{{/unless}}
+			</div></div>
+		
+			<div class="col-md-6 border-left"><div class="container mt-2 mr-2">
+				<h3 align="center">Dungeon-Master View</h3>
+				<h4 align="left">Hit-Point Tracker</h4>
+				<div class="my-3">
+					<ul id="hp-list" class="list-group mt-3"> </ul>
+				</div>
+			</div></div>
+		</div>
+	
+		<script>
+			function update_inits() {
+				$.ajax({
+					url: "/tracker",
+					dataType: "json",
+					success: function(result) {
+						var list = $("#ini-list").empty();
+						var ini_list = result[0];
+						ini_list = ini_list.splice(result[1]).concat(ini_list);
+						ini_list.forEach(ini_entry => list.append(make_entry(ini_entry)));
+						list.children().first().addClass("border border-primary shadow-lg");
+						var hp_list = $("#hp-list").empty();
+						ini_list.forEach(ini_entry => hp_list.append(make_hp_entry(ini_entry)));
+					}
+				})
+			}
+			function make_entry(entry) {
+				var entry_name = trim_string_to_length(entry["entry_name"], 100);
+				var creator_name = trim_string_to_length(entry["creator_name"], 100);
+				
+				{{#if player_id}}
+				var close_button = {{player_id}} == entry["creator_id"] ? `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>` : '';
+				{{else}}
+				var close_button = `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+				{{/if}}
+				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span>${close_button} ${Math.floor(entry["initiative"])}</div>`;
+				
+				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
+			}
+			function make_hp_entry(entry) {
+				var entry_name = trim_string_to_length(entry["entry_name"], 100);
+				var creator_name = trim_string_to_length(entry["creator_name"], 100);
+				
+				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span> <input type="text"></input></div>`;
+				
+				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
+			}
+			function trim_string_to_length(string, length) {
+				if(string.length > length) {
+					return string.substring(0, length) + "...";
+				}
+				return string;
+			}
+			function remove_entry(id) {
+				$.ajax({ type: "POST", url: "/remove/" + id, success: function(result) { $("#ini-" + id).remove(); } })
+			}
+			function remove_all() {
+				$.ajax({type: "POST", url: "/remove/all", success: function(result) { $("#ini-list").empty(); } })
+			}
+			function next() {
+				$.ajax({type: "POST", url: "/next", success: function(result) { update_inits(); } })
+			}
+		</script>
+		
+		<script
+			src="https://code.jquery.com/jquery-3.4.1.min.js"
+			integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+			crossorigin="anonymous"></script>
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+			integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+			crossorigin="anonymous"></script>
+		<script
+			src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+			integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+			crossorigin="anonymous"></script>
+	</body>
+</html>
