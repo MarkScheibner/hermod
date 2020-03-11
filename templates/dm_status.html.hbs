@@ -43,12 +43,10 @@
 				<div class="my-3">
 					<ul id="ini-list" class="list-group mt-3"> </ul>
 				</div>
-				{{#unless player_id}}
 				<div class="btn-group" role="group" style="width:100%">
 					<button class="btn btn-danger w-50 mr-2" onclick="remove_all();"> Remove all entries </button>
 					<button class="btn btn-success w-50 ml-2" onclick="next();"> Next </button>
 				</div>
-				{{/unless}}
 			</div></div>
 		
 			<div class="col-md-6 border-left"><div class="container mt-2 mr-2">
@@ -61,30 +59,53 @@
 		</div>
 	
 		<script>
+			var current_entries = [];
+		
 			function update_inits() {
 				$.ajax({
 					url: "/tracker",
 					dataType: "json",
 					success: function(result) {
 						var list = $("#ini-list").empty();
-						var ini_list = result[0];
+						var ini_list = result[0].slice();
 						ini_list = ini_list.splice(result[1]).concat(ini_list);
 						ini_list.forEach(ini_entry => list.append(make_entry(ini_entry)));
 						list.children().first().addClass("border border-primary shadow-lg");
-						var hp_list = $("#hp-list").empty();
-						ini_list.forEach(ini_entry => hp_list.append(make_hp_entry(ini_entry)));
+						update_hp_tracker(result[0]);
 					}
 				})
+			}
+			function update_hp_tracker(entries) {
+				var entry_ids = entries.map(e => e["entry_id"]);
+				// find "missing" entries and delete them
+				var to_delete = current_entries.filter(e => !entry_ids.includes(e));
+				to_delete.forEach(d => $("#hp-entry-" + d).remove())
+				
+				var list = $("#hp-list");
+				if(list.children().length == 0) {
+					entries.forEach(hp_entry => list.append(make_hp_entry(hp_entry)));
+					return;
+				}
+				
+				var tracker_element = list.children().first();
+				for(var entry of entries) {
+					if($.isEmptyObject(tracker_element.get())) {
+						list.append(make_hp_entry(entry));
+					}
+					else if(tracker_element.attr('id') != "hp-entry-" + entry["entry_id"]) {
+						$(make_hp_entry(entry)).insertBefore(tracker_element);
+					} else {
+						tracker_element = tracker_element.next();
+					}
+				}
+				console.log("---");
+				current_entries = entry_ids;
 			}
 			function make_entry(entry) {
 				var entry_name = trim_string_to_length(entry["entry_name"], 100);
 				var creator_name = trim_string_to_length(entry["creator_name"], 100);
 				
-				{{#if player_id}}
-				var close_button = {{player_id}} == entry["creator_id"] ? `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>` : '';
-				{{else}}
 				var close_button = `<button type="button" onclick='remove_entry(${entry["entry_id"]})' class="close ml-2" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
-				{{/if}}
 				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span>${close_button} ${Math.floor(entry["initiative"])}</div>`;
 				
 				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
@@ -93,9 +114,9 @@
 				var entry_name = trim_string_to_length(entry["entry_name"], 100);
 				var creator_name = trim_string_to_length(entry["creator_name"], 100);
 				
-				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Initiative of </span> <input type="text"></input></div>`;
+				var li_content = `<div><b>${entry_name}</b><br/><font color="#a0a0a0">${creator_name}</font></div><div><span class="sr-only">Hit-Points </span> <input type="number"></input></div>`;
 				
-				return `<li id=entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
+				return `<li id=hp-entry-${entry["entry_id"]} class="list-group-item d-flex justify-content-between align-items-center mt-1">${li_content}</li>`
 			}
 			function trim_string_to_length(string, length) {
 				if(string.length > length) {
@@ -104,10 +125,10 @@
 				return string;
 			}
 			function remove_entry(id) {
-				$.ajax({ type: "POST", url: "/remove/" + id, success: function(result) { $("#ini-" + id).remove(); } })
+				$.ajax({ type: "POST", url: "/remove/" + id, success: function(result) { $("#entry-" + id).remove(); $("#hp-entry-" + id).remove(); } })
 			}
 			function remove_all() {
-				$.ajax({type: "POST", url: "/remove/all", success: function(result) { $("#ini-list").empty(); } })
+				$.ajax({type: "POST", url: "/remove/all", success: function(result) { $("#ini-list").empty(); $("#hp-list").empty() } })
 			}
 			function next() {
 				$.ajax({type: "POST", url: "/next", success: function(result) { update_inits(); } })
